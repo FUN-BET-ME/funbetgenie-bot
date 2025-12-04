@@ -12,6 +12,8 @@ app.use(express.json());
 const TOKEN_GENIE = process.env.BOT_TOKEN_GENIE;
 // India-only Genie bot
 const TOKEN_INDIA = process.env.BOT_TOKEN_INDIA;
+// Russia-only Genie bot
+const TOKEN_RUSSIA = process.env.BOT_TOKEN_RUSSIA;
 
 if (!TOKEN_GENIE) {
   console.error("❌ BOT_TOKEN_GENIE is not set in environment variables.");
@@ -19,12 +21,18 @@ if (!TOKEN_GENIE) {
 if (!TOKEN_INDIA) {
   console.error("❌ BOT_TOKEN_INDIA is not set in environment variables.");
 }
+if (!TOKEN_RUSSIA) {
+  console.error("❌ BOT_TOKEN_RUSSIA is not set in environment variables.");
+}
 
 const API_GENIE = TOKEN_GENIE
   ? `https://api.telegram.org/bot${TOKEN_GENIE}`
   : null;
 const API_INDIA = TOKEN_INDIA
   ? `https://api.telegram.org/bot${TOKEN_INDIA}`
+  : null;
+const API_RUSSIA = TOKEN_RUSSIA
+  ? `https://api.telegram.org/bot${TOKEN_RUSSIA}`
   : null;
 
 // Useful links
@@ -39,7 +47,14 @@ async function sendTelegramMessage(apiBase, payload) {
     return;
   }
 
-  return axios.post(`${apiBase}/sendMessage`, payload);
+  try {
+    return await axios.post(`${apiBase}/sendMessage`, payload);
+  } catch (err) {
+    console.error(
+      "❌ Telegram send error:",
+      err?.response?.data || err?.message || err
+    );
+  }
 }
 
 // =====================
@@ -332,6 +347,165 @@ ${FUNBET_ODDS}
 `;
 
   return sendTelegramMessage(API_INDIA, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+// =====================
+//  RUSSIA GENIE BOT
+//  webhook: /webhook/funbetrussia
+// =====================
+
+app.post("/webhook/funbetrussia", async (req, res) => {
+  const msg = req.body.message;
+
+  if (!msg || !msg.chat) {
+    return res.sendStatus(200);
+  }
+
+  const chatId = msg.chat.id;
+  const text = (msg.text || "").trim().toLowerCase();
+
+  try {
+    console.log("🇷🇺 Russia bot incoming:", JSON.stringify(msg));
+
+    if (text === "/start" || text === "start") {
+      await genieRussiaStart(chatId);
+    } else if (text === "/bonus" || text === "bonus") {
+      await genieRussiaBonus(chatId);
+    } else if (text === "/claim" || text === "claim") {
+      await genieRussiaClaim(chatId);
+    } else if (text === "/help" || text === "help") {
+      await genieRussiaHelp(chatId);
+    } else if (text === "odds" || text === "/odds") {
+      await genieRussiaOdds(chatId);
+    } else {
+      await genieUnknown(chatId, API_RUSSIA);
+    }
+
+    return res.sendStatus(200);
+  } catch (err) {
+    console.error("🇷🇺 Russia bot webhook error:", err?.message || err);
+    return res.sendStatus(200);
+  }
+});
+
+// ===== Russia bot message builders =====
+
+async function genieRussiaStart(chatId) {
+  const msg = `
+🇷🇺 *Добро пожаловать в FunBetMe Genie — Россия!*
+
+Вот ваши актуальные бонусы:
+
+🎁 *Бонус за регистрацию — ₽1000!*
+• Без депозита  
+• Выигрывай до 20× → *₽20 000*  
+• *20× отыгрыш*  
+• Промокод: *FBM20*
+
+🔥 *400% бонус на первый депозит*
+• Пополни на ₽100 → играй с ₽500  
+• Бонус для Казино и Спорта  
+• *20× отыгрыш*  
+• Максимальный депозит: *₽100 000*  
+• Промокод: *FD400*
+
+👉 Нажмите, чтобы открыть FunBet.Me:  
+${FUNBET_SITE}
+
+Вы анализируете. Вы решаете.  
+*Ваше мастерство. Ваш выигрыш!*
+`;
+
+  return sendTelegramMessage(API_RUSSIA, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+async function genieRussiaBonus(chatId) {
+  const msg = `
+🎁 *Текущие бонусы FunBet.Me — Россия*
+
+🎉 *₽1000 за регистрацию*
+• Без депозита  
+• До ₽20 000 выигрыша  
+• 20× отыгрыш  
+• Код: *FBM20*
+
+🔥 *400% бонус на первый депозит*
+• Пополни на ₽100 → играй с ₽500  
+• Казино + Спорт  
+• 20× отыгрыш  
+• Макс. депозит: ₽100 000  
+• Код: *FD400*
+
+Все акции здесь:  
+${FUNBET_PROMOS}
+`;
+
+  return sendTelegramMessage(API_RUSSIA, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+async function genieRussiaClaim(chatId) {
+  const msg = `
+✅ *Как получить ваши бонусы:*
+
+1. Зарегистрируйтесь на FunBet.Me  
+2. Введите промокоды в разделе «Бонусы»  
+3. Бонусы будут начислены автоматически после выполнения условий  
+
+🎁 Регистрация → *₽1000 бесплатно* (FBM20)  
+🔥 Первый депозит → *400% бонус* (FD400)
+
+🌐 ${FUNBET_SITE}
+`;
+
+  return sendTelegramMessage(API_RUSSIA, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+async function genieRussiaHelp(chatId) {
+  const msg = `
+💡 *Команды FunBetMe Genie — Россия*
+
+/start — приветствие и обзор бонусов  
+/bonus — текущие бонусы  
+/claim — как получить бонусы  
+/help — список команд  
+/odds — сравнение коэффициентов  
+
+🌐 Сайт: ${FUNBET_SITE}  
+📊 Статистика: ${FUNBET_ODDS}
+`;
+
+  return sendTelegramMessage(API_RUSSIA, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+async function genieRussiaOdds(chatId) {
+  const msg = `
+📊 *Сравнение коэффициентов и статистика*
+
+Откройте FunBet.AI:
+${FUNBET_ODDS}
+`;
+
+  return sendTelegramMessage(API_RUSSIA, {
     chat_id: chatId,
     text: msg,
     parse_mode: "Markdown",
