@@ -5,15 +5,18 @@ const app = express();
 app.use(express.json());
 
 // =====================
-//  Config – Tokens
+//  CONFIG – TOKENS
 // =====================
 
 // Global / main Genie bot
 const TOKEN_GENIE = process.env.BOT_TOKEN_GENIE;
-// Country bots
+// India-only Genie bot
 const TOKEN_INDIA = process.env.BOT_TOKEN_INDIA;
+// Russia bot
 const TOKEN_RUSSIA = process.env.BOT_TOKEN_RUSSIA;
+// Brazil bot
 const TOKEN_BRAZIL = process.env.BOT_TOKEN_BRAZIL;
+// Turkey bot
 const TOKEN_TURKEY = process.env.BOT_TOKEN_TURKEY;
 
 if (!TOKEN_GENIE) console.error("❌ BOT_TOKEN_GENIE is not set.");
@@ -22,27 +25,27 @@ if (!TOKEN_RUSSIA) console.error("❌ BOT_TOKEN_RUSSIA is not set.");
 if (!TOKEN_BRAZIL) console.error("❌ BOT_TOKEN_BRAZIL is not set.");
 if (!TOKEN_TURKEY) console.error("❌ BOT_TOKEN_TURKEY is not set.");
 
-const API_GENIE = TOKEN_GENIE ? `https://api.telegram.org/bot${TOKEN_GENIE}` : null;
-const API_INDIA = TOKEN_INDIA ? `https://api.telegram.org/bot${TOKEN_INDIA}` : null;
+const API_GENIE  = TOKEN_GENIE  ? `https://api.telegram.org/bot${TOKEN_GENIE}`  : null;
+const API_INDIA  = TOKEN_INDIA  ? `https://api.telegram.org/bot${TOKEN_INDIA}`  : null;
 const API_RUSSIA = TOKEN_RUSSIA ? `https://api.telegram.org/bot${TOKEN_RUSSIA}` : null;
 const API_BRAZIL = TOKEN_BRAZIL ? `https://api.telegram.org/bot${TOKEN_BRAZIL}` : null;
 const API_TURKEY = TOKEN_TURKEY ? `https://api.telegram.org/bot${TOKEN_TURKEY}` : null;
 
 // Useful links
-const FUNBET_SITE = "https://funbet.me/";
+const FUNBET_SITE   = "https://funbet.me/";
 const FUNBET_PROMOS = "https://funbet.me/en/promotions";
-const FUNBET_ODDS = "https://funbet.ai/";
+const FUNBET_ODDS   = "https://funbet.ai/";
 
 // Small helper for sending messages
 async function sendTelegramMessage(apiBase, payload) {
   if (!apiBase) {
-    console.error("❌ Missing API base for Telegram send");
+    console.error("❌ Missing Telegram API base");
     return;
   }
   try {
     await axios.post(`${apiBase}/sendMessage`, payload);
   } catch (err) {
-    console.error("❌ sendTelegramMessage error:", err?.response?.data || err.message);
+    console.error("Telegram sendMessage error:", err?.response?.data || err.message || err);
   }
 }
 
@@ -51,13 +54,12 @@ async function sendTelegramMessage(apiBase, payload) {
 // =====================
 
 app.get("/", (req, res) => {
-  res.send("FunBetMe multi-geo bot is running on DigitalOcean!");
+  res.send("FunBet Genie multi-bot (Global + India + Russia + Brazil + Turkey) is running!");
 });
 
-// ======================================================
-//  GLOBAL GENIE BOT
-//  webhook: /webhook/funbetgenie
-// ======================================================
+// ==================================================
+//  GLOBAL GENIE BOT – /webhook/funbetgenie
+// ==================================================
 
 app.post("/webhook/funbetgenie", async (req, res) => {
   const msg = req.body.message;
@@ -67,7 +69,7 @@ app.post("/webhook/funbetgenie", async (req, res) => {
   const text = (msg.text || "").trim().toLowerCase();
 
   try {
-    console.log("🌍 Genie incoming:", JSON.stringify(msg));
+    console.log("🌍 Global bot incoming:", JSON.stringify(msg));
 
     if (text === "/start" || text === "start") {
       await genieGlobalStart(chatId);
@@ -77,7 +79,7 @@ app.post("/webhook/funbetgenie", async (req, res) => {
       await genieGlobalClaim(chatId);
     } else if (text === "/help" || text === "help") {
       await genieGlobalHelp(chatId);
-    } else if (text === "/odds" || text === "odds") {
+    } else if (text === "odds" || text === "/odds") {
       await genieGlobalOdds(chatId);
     } else {
       await genieUnknown(chatId, API_GENIE);
@@ -90,17 +92,17 @@ app.post("/webhook/funbetgenie", async (req, res) => {
   }
 });
 
-// ----- Global bot handlers -----
+// ===== GLOBAL bot message builders =====
 
 async function genieGlobalStart(chatId) {
   const msg = `
-Welcome to *FunBetMe Genie* ✨
+Welcome to *FunBet Genie* ✨
 
 I'm here to guide you to FunBet.Me and help you discover the best bonuses and odds.
 
-🔥 *Current welcome offers (global)*:
+🔥 Current welcome offers (global):
 • Free sign-up bonus (check country-specific value on the site)  
-• First deposit bonus with low wagering  
+• First deposit bonus with low wagering (20×)  
 • Access to casino, sports, and more
 
 👉 Tap here to open FunBet.Me:
@@ -111,20 +113,20 @@ You analyse. You decide. *Your skill. Your win!*
   return sendTelegramMessage(API_GENIE, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieGlobalBonus(chatId) {
   const msg = `
-🎁 *FunBet.Me Promotions (Global)*
+🎁 *FunBet.Me Promotions*
 
 See all current sign-up, first deposit, and daily offers here:
 ${FUNBET_PROMOS}
 
 FunBet.Me focuses on:
 • Competitive odds  
-• Low wagering where possible  
+• 20× wagering on main welcome bonuses  
 • Clear terms and transparent rewards  
 
 Check your country-specific welcome offer on the promotions page.
@@ -132,7 +134,7 @@ Check your country-specific welcome offer on the promotions page.
   return sendTelegramMessage(API_GENIE, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
@@ -150,19 +152,19 @@ ${FUNBET_SITE}
   return sendTelegramMessage(API_GENIE, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieGlobalHelp(chatId) {
   const msg = `
-💡 *FunBetMe Genie Commands (Global)*
+💡 *FunBet Genie Commands (Global)*
 
 /start  – Welcome + main link  
 /bonus  – Show promotions page  
 /claim  – How to claim bonuses  
 /help   – This menu  
-/odds   – Open FunBet.AI odds & stats
+odds    – Open FunBet.AI odds & stats
 
 🌐 Website: ${FUNBET_SITE}
 📊 Odds & stats: ${FUNBET_ODDS}
@@ -170,7 +172,7 @@ async function genieGlobalHelp(chatId) {
   return sendTelegramMessage(API_GENIE, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
@@ -184,31 +186,13 @@ ${FUNBET_ODDS}
   return sendTelegramMessage(API_GENIE, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
-// Shared fallback
-async function genieUnknown(chatId, apiBase) {
-  const msg = `
-I didn't quite understand that.
-
-Type one of these:
-• /start  
-• /bonus  
-• /claim  
-• /help  
-• /odds
-`;
-  return sendTelegramMessage(apiBase, {
-    chat_id: chatId,
-    text: msg,
-  });
-}
-
-// ======================================================
-//  INDIA BOT – /webhook/funbetindia
-// ======================================================
+// ==================================================
+//  INDIA GENIE BOT – /webhook/funbetindia
+// ==================================================
 
 app.post("/webhook/funbetindia", async (req, res) => {
   const msg = req.body.message;
@@ -241,7 +225,7 @@ app.post("/webhook/funbetindia", async (req, res) => {
   }
 });
 
-// ----- India messages -----
+// ===== INDIA bot messages =====
 
 async function genieIndiaStart(chatId) {
   const msg = `
@@ -250,9 +234,9 @@ async function genieIndiaStart(chatId) {
 I'm here to walk you through our Indian offers and send you to the right place.
 
 🔥 *India launch bonuses*:
-• ₹1,000 Free Sign-Up Bonus (no deposit needed)  
+• ₹1,000 Free Sign-Up Bonus (no deposit)  
 • 400% First Deposit Bonus  
-• *20× wagering* on both bonuses  
+• Only *20× wagering* on both bonuses  
 
 👉 Tap here to open FunBet.Me and create your account:
 ${FUNBET_SITE}
@@ -263,7 +247,7 @@ automatically credited inside your FunBet.Me account.
   return sendTelegramMessage(API_INDIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
@@ -272,9 +256,9 @@ async function genieIndiaBonus(chatId) {
 🎁 *India Bonuses & Promotions*
 
 For Indian players we currently offer:
-• ₹1,000 Free Sign-Up Bonus  
-• 400% First Deposit Bonus  
-• *20× wagering* on both bonuses  
+• ₹1,000 Free Sign-Up Bonus (no deposit)  
+• 400% First Deposit Bonus (Casino & Sports)  
+• 20× wagering on both bonuses  
 
 Full details and any new offers are always here:
 ${FUNBET_PROMOS}
@@ -284,7 +268,7 @@ Make sure to read the terms on the site so you know exactly how to qualify.
   return sendTelegramMessage(API_INDIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
@@ -305,7 +289,7 @@ Open the website and use Live Chat (Tawk) or Support from within the site.
   return sendTelegramMessage(API_INDIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
@@ -317,7 +301,7 @@ async function genieIndiaHelp(chatId) {
 /bonus  – Details of ₹1,000 sign-up & 400% first deposit bonus  
 /claim  – How to get your bonuses credited  
 /help   – This menu  
-/odds   – Open FunBet.AI odds & stats
+odds    – Open FunBet.AI odds & stats
 
 🌐 Website: ${FUNBET_SITE}
 📊 Odds & stats: ${FUNBET_ODDS}
@@ -325,7 +309,7 @@ async function genieIndiaHelp(chatId) {
   return sendTelegramMessage(API_INDIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
@@ -339,13 +323,13 @@ ${FUNBET_ODDS}
   return sendTelegramMessage(API_INDIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
-// ======================================================
+// ==================================================
 //  RUSSIA BOT – /webhook/funbetrussia
-// ======================================================
+// ==================================================
 
 app.post("/webhook/funbetrussia", async (req, res) => {
   const msg = req.body.message;
@@ -380,77 +364,82 @@ app.post("/webhook/funbetrussia", async (req, res) => {
 
 async function genieRussiaStart(chatId) {
   const msg = `
-🇷🇺 *Добро пожаловать в FunBetMe Russia!*
+🇷🇺 *Добро пожаловать в FunBetMe Genie – Россия!*
 
-🎁 *₽1000 бонус за регистрацию* (без депозита)  
-🔥 *400% бонус на первый депозит*  
-🔄 *20× отыгрыш* на всех бонусах  
+Я помогу тебе получить российские бонусы и лучшие коэффициенты.
 
-👉 Открой сайт FunBet.Me:
+🔥 *Бонусы для России*:
+• Супер бонус за регистрацию: ₽1 000 без депозита  
+• 400% бонус на первый депозит (казино + спорт)  
+• Всего *20× отыгрыш* по обоим бонусам  
+
+👉 Открой FunBet.Me и зарегистрируйся:
 ${FUNBET_SITE}
 `;
   return sendTelegramMessage(API_RUSSIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieRussiaBonus(chatId) {
   const msg = `
-🎁 *Бонусы для игроков из России*
+🎁 *Бонусы и акции для игроков из России*
 
-• ₽1000 бонус за регистрацию (без депозита)  
-• 400% бонус на первый депозит  
-• *20× отыгрыш* на всех бонусах  
+• ₽1 000 бонус за регистрацию без депозита  
+  – шанс выиграть до 20×, максимум ₽20 000  
+• 400% бонус на первый депозит (казино и спорт)  
+  – максимум для бонуса: депозит до ₽100 000  
+• Отыгрыш: *20×* от суммы бонуса  
 
-Все подробности читайте на странице акций:
+Полные условия и новые акции смотри здесь:
 ${FUNBET_PROMOS}
 `;
   return sendTelegramMessage(API_RUSSIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieRussiaClaim(chatId) {
   const msg = `
-✅ *Как получить бонусы (Россия)*
+✅ *Как получить бонусы в России*
 
-1. Зарегистрируйтесь на FunBet.Me  
-2. Следуйте инструкциям в разделе "Акции" для России  
-3. Бонусы будут зачислены автоматически после выполнения условий  
+1. Перейди на сайт FunBet.Me и создай новый аккаунт  
+2. Введи нужный промо-код и следуй условиям на странице "Акции"  
+3. После выполнения условий твой бонус (₽1 000 за регистрацию и 400% на первый депозит)
+   будет автоматически зачислен на счёт  
 
-Нужна помощь?  
-Откройте сайт и воспользуйтесь онлайн-чатом.
+Нужна помощь? Используй онлайн-чат на сайте.
 
 🌐 ${FUNBET_SITE}
 `;
   return sendTelegramMessage(API_RUSSIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieRussiaHelp(chatId) {
   const msg = `
-💡 *Команды FunBetMe Russia*
+💡 *Команды FunBetMe Genie – Россия*
 
 /start  – Обзор российских бонусов  
-/bonus  – Детали бонусов регистрации и первого депозита  
-/claim  – Как получить бонус  
+/bonus  – Подробности бонусов ₽1 000 и 400%  
+/claim  – Как активировать бонусы  
 /help   – Это меню  
-/odds   – Перейти на FunBet.AI (коэффициенты и статистика)
+odds    – Открыть FunBet.AI с коэффициентами
 
 🌐 Сайт: ${FUNBET_SITE}
-📊 Коэффициенты: ${FUNBET_ODDS}
+📊 Статистика и коэффициенты: ${FUNBET_ODDS}
 `;
   return sendTelegramMessage(API_RUSSIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
@@ -458,19 +447,19 @@ async function genieRussiaOdds(chatId) {
   const msg = `
 📊 *FunBet.AI для игроков из России*
 
-Сравнивайте коэффициенты и анализируйте статистику здесь:
+Сравнивай коэффициенты и форму команд здесь:
 ${FUNBET_ODDS}
 `;
   return sendTelegramMessage(API_RUSSIA, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
-// ======================================================
+// ==================================================
 //  BRAZIL BOT – /webhook/funbetbrazil
-// ======================================================
+// ==================================================
 
 app.post("/webhook/funbetbrazil", async (req, res) => {
   const msg = req.body.message;
@@ -505,96 +494,102 @@ app.post("/webhook/funbetbrazil", async (req, res) => {
 
 async function genieBrazilStart(chatId) {
   const msg = `
-🇧🇷 *Bem-vindo ao FunBetMe Brasil!*
+🇧🇷 *Bem-vindo ao FunBetMe Genie – Brasil!*
 
-🎁 *Bônus de Cadastro R$100* (sem depósito)  
-🔥 *Bônus de 400% no primeiro depósito*  
-🔄 *Rollover 20×* para todos os bônus  
+Eu te levo direto para os bônus do Brasil e para as melhores odds.
 
-👉 Acesse FunBet.Me:
+🔥 *Bônus para o Brasil*:
+• Bônus de Cadastro R$100 (sem depósito)  
+• Bônus de Primeiro Depósito 400% (Cassino + Esportes)  
+• Apenas *20× de wagering* em ambos os bônus  
+
+👉 Abre FunBet.Me e cria a tua conta:
 ${FUNBET_SITE}
 `;
   return sendTelegramMessage(API_BRAZIL, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieBrazilBonus(chatId) {
   const msg = `
-🎁 *Bônus para jogadores do Brasil*
+🎁 *Bônus e Promoções – Brasil*
 
-• R$100 bônus de cadastro (sem depósito)  
-• 400% de bônus no primeiro depósito  
-• Rollover *20×*  
+• Bônus de cadastro: R$100 grátis  
+  – ganho máximo R$2.000 (20×)  
+• Bônus de primeiro depósito: 400% para Cassino e Esportes  
+  – depósito máximo elegível para o bônus: R$10.000  
+• Requisito de wagering: *20×* do valor do bônus  
 
-Veja todos os detalhes na página de promoções:
+Confere todos os detalhes e novas promoções aqui:
 ${FUNBET_PROMOS}
 `;
   return sendTelegramMessage(API_BRAZIL, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieBrazilClaim(chatId) {
   const msg = `
-✅ *Como receber seus bônus (Brasil)*
+✅ *Como resgatar os bônus no Brasil*
 
-1. Crie sua conta em FunBet.Me  
-2. Siga as instruções na seção de Promoções para o Brasil  
-3. Seus bônus serão creditados automaticamente após cumprir os requisitos  
+1. Acesse FunBet.Me e crie a sua conta  
+2. Siga as instruções na página de Promoções (códigos FBM20 / FD400, quando aplicável)  
+3. Depois de cumprir os requisitos, o bônus de R$100 e o 400% do primeiro depósito
+   serão creditados automaticamente na sua conta  
 
-Ajuda? Use o chat ao vivo no site.
+Precisa de ajuda? Use o chat ao vivo no site.
 
 🌐 ${FUNBET_SITE}
 `;
   return sendTelegramMessage(API_BRAZIL, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieBrazilHelp(chatId) {
   const msg = `
-💡 *Comandos FunBetMe Brasil*
+💡 *Comandos do FunBetMe Genie – Brasil*
 
-/start  – Visão geral dos bônus no Brasil  
-/bonus  – Detalhes do bônus de cadastro e primeiro depósito  
-/claim  – Como receber seus bônus  
+/start  – Visão geral dos bônus do Brasil  
+/bonus  – Detalhes do bônus de cadastro e 400% primeiro depósito  
+/claim  – Como ativar os bônus  
 /help   – Este menu  
-/odds   – Abrir FunBet.AI (odds & estatísticas)
+odds    – Abrir FunBet.AI com odds e estatísticas
 
 🌐 Site: ${FUNBET_SITE}
-📊 Odds: ${FUNBET_ODDS}
+📊 Odds & estatísticas: ${FUNBET_ODDS}
 `;
   return sendTelegramMessage(API_BRAZIL, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieBrazilOdds(chatId) {
   const msg = `
-📊 *FunBet.AI para jogadores do Brasil*
+📊 *FunBet.AI para o Brasil*
 
-Compare odds e analise estatísticas aqui:
+Compara odds e analisa estatísticas aqui:
 ${FUNBET_ODDS}
 `;
   return sendTelegramMessage(API_BRAZIL, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
-// ======================================================
+// ==================================================
 //  TURKEY BOT – /webhook/funbetturkey
-// ======================================================
+// ==================================================
 
 app.post("/webhook/funbetturkey", async (req, res) => {
   const msg = req.body.message;
@@ -629,77 +624,82 @@ app.post("/webhook/funbetturkey", async (req, res) => {
 
 async function genieTurkeyStart(chatId) {
   const msg = `
-🇹🇷 *FunBetMe Türkiye'ye Hoş Geldin!*
+🇹🇷 *FunBetMe Genie – Türkiye'ye hoş geldin!*
 
-🎁 *₺500 Süper Kayıt Bonusu* (yatırım gerekmez)  
-🔥 *%400 İlk Yatırım Bonusu*  
-🔄 Tüm bonuslarda *20× çevrim şartı*  
+Türkiye oyuncuları için özel bonusları ve en iyi oranları sana gösteriyorum.
 
-👉 FunBet.Me sitesini aç:
+🔥 *Türkiye bonusları*:
+• Süper Kayıt Bonusu: 500 ₺ (yatırım gerekmez)  
+• İlk Yatırım Bonusu: %400 (casino + spor)  
+• Her iki bonus için de sadece *20× çevirim şartı*  
+
+👉 FunBet.Me sitesini aç ve hemen kayıt ol:
 ${FUNBET_SITE}
 `;
   return sendTelegramMessage(API_TURKEY, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieTurkeyBonus(chatId) {
   const msg = `
-🎁 *Türkiye Bonusları ve Kampanyalar*
+🎁 *Türkiye Bonusları ve Kampanyaları*
 
-• ₺500 Süper Kayıt Bonusu (yatırım gerekmez)  
-• %400 İlk Yatırım Bonusu  
-• Tüm bonuslarda *20× çevrim şartı*  
+• Süper Kayıt Bonusu: 500 ₺ bedava  
+  – kazanma şansı 20×, maksimum kazanç 10.000 ₺  
+• İlk Yatırım Bonusu: %400 casino ve spor için  
+  – bonus için maksimum yatırım: 50.000 ₺  
+• Çevirim şartı: bonus tutarının *20×*  
 
-Detaylı koşullar ve yeni kampanyalar için:
+Tüm detaylar ve yeni kampanyalar için:
 ${FUNBET_PROMOS}
 `;
   return sendTelegramMessage(API_TURKEY, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieTurkeyClaim(chatId) {
   const msg = `
-✅ *Türkiye Bonuslarını Nasıl Alırsın?*
+✅ *Türkiye bonuslarını nasıl alırsın?*
 
-1. FunBet.Me sitesine gir ve yeni hesap oluştur  
-2. Türkiye promosyon sayfasındaki adımları takip et  
-3. Şartları tamamladığında, ₺500 kayıt bonusun ve %400 ilk yatırım bonusun
-   otomatik olarak hesabına tanımlanır  
+1. FunBet.Me sitesine gir ve yeni bir hesap aç  
+2. Türkiye promosyon sayfasındaki adımları takip et (gerekli kodları kullan)  
+3. Şartları tamamladıktan sonra 500 ₺ kayıt bonusun ve %400 ilk yatırım bonusun
+   otomatik olarak hesabına yansır  
 
-Yardım lazım olursa, sitedeki canlı sohbeti kullanabilirsin.
+Yardım istersen, sitedeki canlı sohbeti kullanabilirsin.
 
 🌐 ${FUNBET_SITE}
 `;
   return sendTelegramMessage(API_TURKEY, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
 async function genieTurkeyHelp(chatId) {
   const msg = `
-💡 *FunBetMe Türkiye Komutları*
+💡 *FunBetMe Genie – Türkiye Komutları*
 
-/start  – Türkiye bonuslarına genel bakış  
-/bonus  – ₺500 kayıt ve %400 ilk yatırım bonusu detayları  
-/claim  – Bonuslarının nasıl yükleneceği  
+/start  – Türkiye tekliflerinin özeti  
+/bonus  – 500 ₺ kayıt bonusu ve %400 ilk yatırım detayları  
+/claim  – Bonusların nasıl yükleneceği  
 /help   – Bu menü  
-/odds   – FunBet.AI sayfasını aç (oranlar & istatistikler)
+odds    – FunBet.AI oranlar ve istatistikler
 
 🌐 Site: ${FUNBET_SITE}
-📊 Oranlar: ${FUNBET_ODDS}
+📊 Oranlar & istatistikler: ${FUNBET_ODDS}
 `;
   return sendTelegramMessage(API_TURKEY, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
   });
 }
 
@@ -707,13 +707,34 @@ async function genieTurkeyOdds(chatId) {
   const msg = `
 📊 *FunBet.AI – Türkiye oyuncuları için*
 
-Futbol, basketbol, bahis oranları ve istatistikleri burada:
+Futbol, basketbol ve daha fazlası için oranları burada karşılaştır:
 ${FUNBET_ODDS}
 `;
   return sendTelegramMessage(API_TURKEY, {
     chat_id: chatId,
     text: msg,
-    parse_mode: "Markdown",
+    parse_mode: "Markdown"
+  });
+}
+
+// ==================================================
+//  SHARED FALLBACK
+// ==================================================
+
+async function genieUnknown(chatId, apiBase) {
+  const msg = `
+I didn't quite understand that.
+
+Type one of these:
+• /start  
+• bonus  
+• claim  
+• help  
+• odds
+`;
+  return sendTelegramMessage(apiBase, {
+    chat_id: chatId,
+    text: msg
   });
 }
 
@@ -723,5 +744,5 @@ ${FUNBET_ODDS}
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`FunBetMe multi-geo bot running on port ${PORT}`);
+  console.log(`FunBet Genie multi-bot running on port ${PORT}`);
 });
