@@ -21,15 +21,16 @@ const API = `https://api.telegram.org/bot${TOKEN}`;
 //  Routes
 // =====================
 
-// Simple health check
+// Health check
 app.get("/", (req, res) => {
-  res.send("FunBetGenie bot is running on DigitalOcean App Platform!");
+  res.send("FunBetGenie bot is running!");
 });
 
 // Telegram webhook
-// Make sure your setWebhook URL ends with /webhook to match this
-// e.g. https://funbetgeniebot-8j268.ondigitalocean.app/webhook
-app.post("/webhook", async (req, res) => {
+// Make sure your setWebhook URL ends with /webhook/funbetgenie
+// Example:
+// https://funbetgeniebot-8j268.ondigitalocean.app/webhook/funbetgenie
+app.post("/webhook/funbetgenie", async (req, res) => {
   const msg = req.body.message;
 
   if (!msg || !msg.chat) {
@@ -37,58 +38,57 @@ app.post("/webhook", async (req, res) => {
   }
 
   const chatId = msg.chat.id;
-  const text = (msg.text || "").trim();
+  const rawText = msg.text || "";
+  const text = rawText.trim();
   const lower = text.toLowerCase();
 
   console.log("Incoming message:", JSON.stringify(msg));
 
   try {
     if (lower === "/start" || lower === "start") {
-      await sendWelcome(chatId);
-    } else if (lower === "claim" || lower === "/claim") {
-      await sendClaimInfo(chatId);
-    } else if (lower === "/help" || lower.includes("help")) {
+      await sendStart(chatId);
+    } else if (lower === "/bonus" || lower === "bonus") {
+      await sendBonus(chatId);
+    } else if (lower === "/claim" || lower === "claim") {
+      await sendClaim(chatId);
+    } else if (lower === "/help" || lower === "help") {
       await sendHelp(chatId);
+    } else if (lower === "/odds" || lower === "odds" || lower.includes("odds")) {
+      await sendOdds(chatId);
     } else {
-      await sendUnknown(chatId);
+      await sendFallback(chatId);
     }
 
-    // Always acknowledge Telegram fast
     return res.sendStatus(200);
   } catch (err) {
     console.error("Webhook error:", err?.response?.data || err?.message || err);
-    // Reply 200 so Telegram doesn't keep retrying
     return res.sendStatus(200);
   }
 });
 
 // =====================
-//  Helper functions
+//  Helper responses
 // =====================
 
-async function sendWelcome(chatId) {
-  const url =
-    "https://funbet.me/?utm_source=telegram&utm_medium=genie&utm_campaign=bot&utm_id=genie_bot";
-
+async function sendStart(chatId) {
   const msg = `
-Welcome to FunBet Genie! 🎩✨
+Welcome to FunBet Genie! 🎩
 
-Your exclusive launch bonus:
-➡️ Get €20 / ₹1000 Free – No Deposit Required.
+I’m here to guide you to FunBet.Me and help you discover the best bonuses.
 
-• 10× wagering
-• Max win €400
-• Use on Casino or Sports
+Current highlights:
+• Sign-up No Deposit Bonus
+• First Deposit Bonus for Casino & Sports
+• Boosted odds and regular promotions
 
-1️⃣ Tap this link to create YOUR FunBet.Me account:
-${url}
+Start your journey here:
+https://funbet.me/
 
-2️⃣ Once you have finished registration, come back here and type:
-
-CLAIM
-
-to get tips, reminders and updates about your bonus.
-Your bonus is automatically added to your account when you sign up with this link.
+You can also type:
+• /bonus  – see our promotions page
+• /claim  – how your bonuses work
+• /odds   – check live odds and stats on FunBet.AI
+• /help   – go to FunBet.Me for support
 `;
 
   return axios.post(`${API}/sendMessage`, {
@@ -97,24 +97,48 @@ Your bonus is automatically added to your account when you sign up with this lin
   });
 }
 
-async function sendClaimInfo(chatId) {
+async function sendBonus(chatId) {
   const msg = `
-Great! 🎉
+🎁 FunBet.Me Promotions
 
-If you registered on FunBet.Me using the link from this chat:
+Visit our official promotions page for:
+• Sign-up No Deposit Bonus
+• First Deposit Bonus
+• Ongoing casino and sports offers
 
-✅ Your €20 / ₹1000 free bonus is automatically added to your FunBet.Me account.
-You don’t need to send your email or do anything extra in Telegram.
+We keep wagering requirements low and bonuses fair so you can enjoy more play and more chances to win.
 
-Just log in to FunBet.Me, check your balance and start playing.
-If you don't see the bonus, contact support from the FunBet.Me website.
+Check the latest offers here:
+https://funbet.me/en/promotions
 
-I’ll also send you occasional:
-• Boosted odds info
-• Hot casino picks
-• VIP / promo updates
+When you're ready to play:
+https://funbet.me/
+`;
 
-Type /help anytime to see what I can do.
+  return axios.post(`${API}/sendMessage`, {
+    chat_id: chatId,
+    text: msg,
+  });
+}
+
+async function sendClaim(chatId) {
+  const msg = `
+How to claim your FunBet bonuses:
+
+1) Sign-up No Deposit Bonus:
+• Register a new account on FunBet.Me.
+• Your no-deposit bonus is added automatically according to the current promotion.
+• Just log in and check your balance/bonus section.
+
+2) First Deposit Bonus:
+• Make your first deposit on FunBet.Me.
+• The bonus is applied based on the promotion rules (amount, game type, wagering and max win).
+• Full details are always on the promotions page.
+
+Start or continue here:
+https://funbet.me/
+
+For any questions about your specific account or bonus, please contact support on FunBet.Me using the live chat.
 `;
 
   return axios.post(`${API}/sendMessage`, {
@@ -125,13 +149,12 @@ Type /help anytime to see what I can do.
 
 async function sendHelp(chatId) {
   const msg = `
-FunBet Genie Commands:
+For support, account questions, deposits, withdrawals or detailed bonus help, please visit our website and use the live chat.
 
-/start  – Get your signup link and bonus info
-CLAIM   – Info about your bonus after you register
-/help   – Show this help message again
+Go to FunBet.Me:
+https://funbet.me/
 
-Remember: your bonus is credited automatically when you register on FunBet.Me using the link I send you.
+Our team is available via the site chat to assist you directly.
 `;
 
   return axios.post(`${API}/sendMessage`, {
@@ -140,14 +163,36 @@ Remember: your bonus is credited automatically when you register on FunBet.Me us
   });
 }
 
-async function sendUnknown(chatId) {
+async function sendOdds(chatId) {
   const msg = `
-I didn't understand that.
+Want to check stats, odds and match information?
+
+Visit our analytics and odds companion:
+https://funbet.ai/
+
+Use FunBet.AI to compare odds, analyse games and then place your bets on:
+https://funbet.me/
+`;
+
+  return axios.post(`${API}/sendMessage`, {
+    chat_id: chatId,
+    text: msg,
+  });
+}
+
+async function sendFallback(chatId) {
+  const msg = `
+I didn’t understand that.
 
 You can use:
-/start  – Begin and get your signup link
-CLAIM   – Info about your bonus
-/help   – Show commands
+• /start  – welcome and main info
+• /bonus  – see promotions
+• /claim  – how to claim bonuses
+• /odds   – go to FunBet.AI
+• /help   – go to FunBet.Me for support
+
+Or visit:
+https://funbet.me/
 `;
 
   return axios.post(`${API}/sendMessage`, {
