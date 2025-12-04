@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 
 // =====================
-//  Config
+//  CONFIG
 // =====================
 
 const TOKEN = process.env.BOT_TOKEN;
@@ -16,15 +16,15 @@ if (!TOKEN) {
 const API = `https://api.telegram.org/bot${TOKEN}`;
 
 // =====================
-//  Routes
+//  ROUTES
 // =====================
 
 // Health check
 app.get("/", (req, res) => {
-  res.send("FunBetGenie is running on DigitalOcean App Platform!");
+  res.send("FunBetGenie Bot is running!");
 });
 
-// ✅ Telegram webhook – FIXED PATH (no token in URL)
+// Telegram webhook
 app.post("/webhook/funbetgenie", async (req, res) => {
   const msg = req.body.message;
 
@@ -33,11 +33,11 @@ app.post("/webhook/funbetgenie", async (req, res) => {
   }
 
   const chatId = msg.chat.id;
-  const text = (msg.text || "").toLowerCase();
+  const text = (msg.text || "").toLowerCase().trim();
+
+  console.log("Incoming message:", msg);
 
   try {
-    console.log("Incoming message:", JSON.stringify(msg));
-
     if (text === "/start") {
       await sendWelcome(chatId);
     } else if (text === "claim") {
@@ -48,98 +48,93 @@ app.post("/webhook/funbetgenie", async (req, res) => {
       await sendUnknown(chatId);
     }
 
-    // Always acknowledge Telegram quickly
     return res.sendStatus(200);
   } catch (err) {
-    console.error("Webhook error:", err?.message || err);
+    console.error("Webhook error:", err?.response?.data || err.message);
     return res.sendStatus(200);
   }
 });
 
 // =====================
-//  Helper functions
+//  FUNCTIONS — NO MARKDOWN = NO ERRORS
 // =====================
 
 async function sendWelcome(chatId) {
-  const url =
-    "https://funbet.me/?utm_source=telegram&utm_medium=genie&utm_campaign=bot&utm_id=genie_bot";
+  const url = "https://funbet.me/?utm_source=telegram&utm_medium=genie&utm_campaign=bot&utm_id=genie_bot";
 
-  const msg = `
-🎉 *Welcome to FunBet Genie!*
+  const msg =
+`Welcome to FunBet Genie!
 
-🔥 Your exclusive launch bonus:
-💰 *Get €20 / ₹1000 Free – No Deposit Required*
+Your exclusive launch bonus:
+Get €20 / ₹1000 Free – No Deposit Required.
 
-10× wagering • Max win €400 • Use on Casino or Sports
+10x wagering • Max win €400 • Casino or Sports.
 
-👉 Tap to create your FunBet account:
+Tap below to create your FunBet account:
 ${url}
 
-After signup, return here and type *CLAIM* to activate your bonus.
+After signup, return here and type CLAIM to activate your bonus.
 `;
 
   return axios.post(`${API}/sendMessage`, {
     chat_id: chatId,
-    text: msg,
-    parse_mode: "Markdown",
+    text: msg
   });
 }
 
 async function sendClaimInstructions(chatId) {
-  const msg = `
-🎁 *Bonus Activation – One Last Step*
+  const msg =
+`Bonus Activation:
 
-Please reply with the *email address* you used to register on FunBet.Me.
+Please reply with the email address you used to register on FunBet.Me.
 
 Example:
-\`myemail@example.com\`
+myemail@example.com
 
-(I'll use this to check your account and activate your €20 / ₹1000 free bonus.)
+This is required to activate your €20 / ₹1000 free bonus.
 `;
 
   return axios.post(`${API}/sendMessage`, {
     chat_id: chatId,
-    text: msg,
-    parse_mode: "Markdown",
+    text: msg
   });
 }
 
 async function sendHelp(chatId) {
-  const msg = `
-💡 *FunBet Genie Commands*
+  const msg =
+`FunBet Genie Help:
 
-/start  - Begin your bonus journey  
-CLAIM   - Activate your €20 / ₹1000 free bonus  
+/start  - Start your bonus journey
+CLAIM   - Activate your €20 / ₹1000 free bonus
 help    - Show this help menu
 
-Soon I'll also send boosted odds, hot casino picks, and VIP offers directly here in Telegram.
+More features coming soon!
 `;
 
   return axios.post(`${API}/sendMessage`, {
     chat_id: chatId,
-    text: msg,
-    parse_mode: "Markdown",
+    text: msg
   });
 }
 
 async function sendUnknown(chatId) {
-  const msg = `
-I didn’t understand that.
+  const msg =
+`I didn’t understand that.
 
-Type:
-/start  to begin  
-CLAIM   to activate your bonus  
-help    to see commands
+Commands:
+/start
+CLAIM
+help
 `;
 
   return axios.post(`${API}/sendMessage`, {
     chat_id: chatId,
-    text: msg,
+    text: msg
   });
 }
 
 // =====================
-//  Start server
+//  START SERVER
 // =====================
 
 const PORT = process.env.PORT || 8080;
