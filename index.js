@@ -4,20 +4,31 @@ import axios from "axios";
 const app = express();
 app.use(express.json());
 
-// 🔐 Bot token from environment
+// =====================
+//  Config
+// =====================
+
 const TOKEN = process.env.BOT_TOKEN;
+if (!TOKEN) {
+  console.error("❌ BOT_TOKEN is not set in environment variables.");
+}
+
+const SAFE_TOKEN = encodeURIComponent(TOKEN || "");
 const API = `https://api.telegram.org/bot${TOKEN}`;
 
-// Simple health check route
+// =====================
+//  Routes
+// =====================
+
+// Health check
 app.get("/", (req, res) => {
   res.send("FunBetGenie is running on DigitalOcean App Platform!");
 });
 
-// 🔔 Telegram webhook endpoint
-app.post(`/webhook/${TOKEN}`, async (req, res) => {
+// Telegram webhook – NOTE: uses SAFE_TOKEN in the path
+app.post(`/webhook/${SAFE_TOKEN}`, async (req, res) => {
   const msg = req.body.message;
 
-  // Always acknowledge even if message is missing
   if (!msg || !msg.chat) {
     return res.sendStatus(200);
   }
@@ -36,11 +47,10 @@ app.post(`/webhook/${TOKEN}`, async (req, res) => {
       await sendUnknown(chatId);
     }
 
-    // ✅ Always respond 200 quickly so Telegram doesn’t timeout
+    // Always acknowledge Telegram quickly
     return res.sendStatus(200);
   } catch (err) {
     console.error("Webhook error:", err?.message || err);
-    // Still acknowledge to Telegram to avoid 5xx errors
     return res.sendStatus(200);
   }
 });
@@ -101,7 +111,7 @@ async function sendHelp(chatId) {
 CLAIM   - Activate your €20 / ₹1000 free bonus  
 help    - Show this help menu
 
-I’ll soon also send boosted odds, hot casino picks, and VIP offers directly here in Telegram.
+Soon I'll also send boosted odds, hot casino picks, and VIP offers directly here in Telegram.
 `;
 
   return axios.post(`${API}/sendMessage`, {
