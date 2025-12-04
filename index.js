@@ -13,7 +13,6 @@ if (!TOKEN) {
   console.error("❌ BOT_TOKEN is not set in environment variables.");
 }
 
-const SAFE_TOKEN = encodeURIComponent(TOKEN || "");
 const API = `https://api.telegram.org/bot${TOKEN}`;
 
 // =====================
@@ -25,8 +24,8 @@ app.get("/", (req, res) => {
   res.send("FunBetGenie is running on DigitalOcean App Platform!");
 });
 
-// Telegram webhook – NOTE: uses SAFE_TOKEN in the path
-app.post(`/webhook/${SAFE_TOKEN}`, async (req, res) => {
+// ✅ Telegram webhook – FIXED PATH (no token in URL)
+app.post("/webhook/funbetgenie", async (req, res) => {
   const msg = req.body.message;
 
   if (!msg || !msg.chat) {
@@ -37,6 +36,8 @@ app.post(`/webhook/${SAFE_TOKEN}`, async (req, res) => {
   const text = (msg.text || "").toLowerCase();
 
   try {
+    console.log("Incoming message:", JSON.stringify(msg));
+
     if (text === "/start") {
       await sendWelcome(chatId);
     } else if (text === "claim") {
