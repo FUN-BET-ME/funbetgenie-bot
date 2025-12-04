@@ -14,6 +14,8 @@ const TOKEN_GENIE = process.env.BOT_TOKEN_GENIE;
 const TOKEN_INDIA = process.env.BOT_TOKEN_INDIA;
 // Russia-only Genie bot
 const TOKEN_RUSSIA = process.env.BOT_TOKEN_RUSSIA;
+// Brazil-only Genie bot
+const TOKEN_BRAZIL = process.env.BOT_TOKEN_BRAZIL;
 
 if (!TOKEN_GENIE) {
   console.error("❌ BOT_TOKEN_GENIE is not set in environment variables.");
@@ -24,6 +26,9 @@ if (!TOKEN_INDIA) {
 if (!TOKEN_RUSSIA) {
   console.error("❌ BOT_TOKEN_RUSSIA is not set in environment variables.");
 }
+if (!TOKEN_BRAZIL) {
+  console.error("❌ BOT_TOKEN_BRAZIL is not set in environment variables.");
+}
 
 const API_GENIE = TOKEN_GENIE
   ? `https://api.telegram.org/bot${TOKEN_GENIE}`
@@ -33,6 +38,9 @@ const API_INDIA = TOKEN_INDIA
   : null;
 const API_RUSSIA = TOKEN_RUSSIA
   ? `https://api.telegram.org/bot${TOKEN_RUSSIA}`
+  : null;
+const API_BRAZIL = TOKEN_BRAZIL
+  ? `https://api.telegram.org/bot${TOKEN_BRAZIL}`
   : null;
 
 // Useful links
@@ -506,6 +514,157 @@ ${FUNBET_ODDS}
 `;
 
   return sendTelegramMessage(API_RUSSIA, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+// =====================
+//  BRAZIL GENIE BOT
+//  webhook: /webhook/funbetbrazil
+// =====================
+
+app.post("/webhook/funbetbrazil", async (req, res) => {
+  const msg = req.body.message;
+
+  if (!msg || !msg.chat) {
+    return res.sendStatus(200);
+  }
+
+  const chatId = msg.chat.id;
+  const text = (msg.text || "").trim().toLowerCase();
+
+  try {
+    console.log("🇧🇷 Brazil bot incoming:", JSON.stringify(msg));
+
+    if (text === "/start" || text === "start") {
+      await genieBrazilStart(chatId);
+    } else if (text === "/bonus" || text === "bonus") {
+      await genieBrazilBonus(chatId);
+    } else if (text === "/claim" || text === "claim") {
+      await genieBrazilClaim(chatId);
+    } else if (text === "/help" || text === "help") {
+      await genieBrazilHelp(chatId);
+    } else if (text === "odds" || text === "/odds") {
+      await genieBrazilOdds(chatId);
+    } else {
+      await genieUnknown(chatId, API_BRAZIL);
+    }
+
+    return res.sendStatus(200);
+  } catch (err) {
+    console.error("🇧🇷 Brazil bot webhook error:", err?.message || err);
+    return res.sendStatus(200);
+  }
+});
+
+// ===== Brazil bot message builders =====
+
+async function genieBrazilStart(chatId) {
+  const msg = `
+🇧🇷 *Bem-vindo ao FunBetMe Genie – Brasil!*
+
+🔥 *Super Bônus de Cadastro: R$100!*
+• Nenhum depósito necessário  
+• Ganhe até 20× → *R$2.000*  
+• Apenas *10×* de aposta exigida  
+• Código: *FBM20*
+
+💰 *Bônus no Primeiro Depósito: 400%*
+• Deposite *R$10* → jogue com *R$50*  
+• Válido para Cassino e Esportes  
+• *20×* de aposta exigida  
+• Depósito máximo: *R$10.000*  
+• Código: *FD400*
+
+👉 Toque aqui para abrir FunBet.Me:  
+${FUNBET_SITE}
+`;
+
+  return sendTelegramMessage(API_BRAZIL, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+async function genieBrazilBonus(chatId) {
+  const msg = `
+🎁 *Bônus Atuais – Brasil*
+
+🎉 *R$100 de Cadastro – Sem Depósito*
+• Até R$2.000 em ganhos  
+• Apenas 10× de rollover  
+• Código: *FBM20*
+
+🔥 *400% no Primeiro Depósito*
+• Deposite R$10 → jogue com R$50  
+• Cassino + Esportes  
+• 20× de rollover  
+• Depósito máximo: R$10.000  
+• Código: *FD400*
+
+Veja os detalhes completos em:  
+${FUNBET_PROMOS}
+`;
+
+  return sendTelegramMessage(API_BRAZIL, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+async function genieBrazilClaim(chatId) {
+  const msg = `
+✅ *Como ativar seus bônus no Brasil*
+
+1. Acesse FunBet.Me e crie sua conta  
+2. Use os códigos *FBM20* (cadastro) e *FD400* (primeiro depósito)  
+3. Siga as regras da página de Promoções  
+4. Os bônus serão creditados automaticamente após cumprir os requisitos
+
+🌐 ${FUNBET_SITE}
+`;
+
+  return sendTelegramMessage(API_BRAZIL, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+async function genieBrazilHelp(chatId) {
+  const msg = `
+💡 *Comandos do FunBetMe Genie – Brasil*
+
+/start  – Boas-vindas + visão geral dos bônus  
+/bonus  – Ver bônus de cadastro e primeiro depósito  
+/claim  – Como receber seus bônus  
+/help   – Lista de comandos  
+/odds   – Abrir FunBet.AI (odds e estatísticas)
+
+🌐 Site: ${FUNBET_SITE}  
+📊 Odds & stats: ${FUNBET_ODDS}
+`;
+
+  return sendTelegramMessage(API_BRAZIL, {
+    chat_id: chatId,
+    text: msg,
+    parse_mode: "Markdown",
+  });
+}
+
+async function genieBrazilOdds(chatId) {
+  const msg = `
+📊 *FunBet.AI – Odds & Análises para o Brasil*
+
+Compare odds e analise estatísticas aqui:  
+${FUNBET_ODDS}
+`;
+
+  return sendTelegramMessage(API_BRAZIL, {
     chat_id: chatId,
     text: msg,
     parse_mode: "Markdown",
